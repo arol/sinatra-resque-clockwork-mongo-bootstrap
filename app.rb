@@ -1,6 +1,11 @@
 require "bundler/setup"
 Bundler.require(:default)
 
+if ENV["REDISTOGO_URL"] then
+  uri = URI.parse(ENV["REDISTOGO_URL"])
+  Resque.redis = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
+end
+
 module Eat
     @queue = :food
 
@@ -9,12 +14,16 @@ module Eat
     end
 end
 
-get '/' do
-    "<a href='/eat/mango'>eat something</a>
-     <a href='/resque'>resque</a>"
-end
+class Application < Sinatra::Base
 
-get '/eat/:food' do
-    Resque.enqueue(Eat, params['food'])
-    "Put #{params['food']} in fridge to eat later."
+  get '/' do
+      "<a href='/eat/mango'>eat something</a>
+       <a href='/resque'>resque</a>"
+  end
+
+  get '/eat/:food' do
+      Resque.enqueue(Eat, params['food'])
+      "Put #{params['food']} in fridge to eat later."
+  end
+
 end
